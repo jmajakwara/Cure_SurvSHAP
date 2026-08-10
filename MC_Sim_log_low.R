@@ -21,7 +21,7 @@ logit <- function(p) log(p / (1 - p))
 generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure") {
   set.seed(seed)
   
-  # === 1. Generate Mildly Correlated Latent Variables ===
+  # Generate Mildly Correlated Latent Variables ===
   rho <- 0.15
   cor_matrix <- matrix(rho, nrow = 4, ncol = 4)
   diag(cor_matrix) <- 1
@@ -34,7 +34,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure"
   Y <- as.data.frame(Y)
   colnames(Y) <- paste0("Y", 1:4)
   
-  # === 2. Transform to Target Distributions ===
+  # =Transform to Target Distributions ===
   X <- Y |>
     mutate(
       X1 = case_when(
@@ -51,7 +51,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure"
   
   X5 = rpois(n, lambda = 1.5)
   
-  # === 3. Incidence Submodel - Different Scenarios ===
+  # Incidence Submodel - Different Scenarios ===
   X_inc <- model.matrix(~ X1, data = X)[, -1]
   
   b_true <- switch(scenario,
@@ -64,7 +64,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure"
   pi_cure <- 1 / (1 + exp(-eta_inc))            # Probability of being cured
   cure <- rbinom(n, 1, pi_cure)                 # 1 = cured, 0 = susceptible
   
-  # === 4. Latency Submodel ===
+  # Latency Submodel ===
   X_lat <- cbind(X$X2, X$X3, X$X4)
   
   g_true <- c(-5.65, 0.75, 0.3)
@@ -81,7 +81,6 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure"
   Y_time <- rep(Inf, n)
   Y_time[idx] <- exp(log_T[idx])
   
-  # Realistic censoring
   C <- rexp(n, rate = 0.0001)
   time_obs <- pmin(Y_time, C)
   status <- as.numeric(Y_time <= C)
@@ -97,7 +96,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "low_cure"
     cure = cure
   )
 }
-# ====================== CORRECTED MONTE CARLO SIMULATION ======================
+# ====================== MONTE CARLO SIMULATION ======================
 
 monte_carlo_cure <- function(B = 1000, n = 1000, scenario = "low_cure", seed = 2000) {
   
@@ -253,9 +252,7 @@ set.seed(2000)
 mc_results_high <- monte_carlo_cure(B = 1000, n = 3000, scenario = "low_cure", seed = 2000)
 print(mc_results_high)
 
-# Optional: Run other scenarios
-# mc_results_medium <- monte_carlo_cure(B = 300, n = 2000, scenario = "medium_cure", seed = 2026)
-# mc_results_low <- monte_carlo_cure(B = 300, n = 2000, scenario = "low_cure", seed = 2026)
+
 
 # ====================== PLOT RESULTS ======================
 if(!is.null(mc_results_high$metrics)) {
