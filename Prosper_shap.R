@@ -136,7 +136,7 @@ plot(shap_result, geom = "beeswarm",max_vars = 8) +
 dev.off()
 
 pdf("SHAP_importance.pdf", width = 10, height = 6)
-plot(shap_result, type = "importance",max_vars = 8) + 
+plot(shap_result, geom = "importance",max_vars = 8) + 
   ggtitle("Global Feature Importance over Time") +
   theme_minimal() + 
   theme(legend.position = "bottom")
