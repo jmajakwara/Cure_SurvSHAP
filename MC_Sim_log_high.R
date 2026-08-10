@@ -21,7 +21,6 @@ logit <- function(p) log(p / (1 - p))
 generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure") {
   set.seed(seed)
   
-  # === 1. Generate Mildly Correlated Latent Variables ===
   rho <- 0.15
   cor_matrix <- matrix(rho, nrow = 4, ncol = 4)
   diag(cor_matrix) <- 1
@@ -34,7 +33,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure
   Y <- as.data.frame(Y)
   colnames(Y) <- paste0("Y", 1:4)
   
-  # === 2. Transform to Target Distributions ===
+  # Transform to Target Distributions ===
   X <- Y |>
     mutate(
       X1 = case_when(
@@ -51,7 +50,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure
   
   X5 = rpois(n, lambda = 2.2)
   
-  # === 3. Incidence Submodel - Different Scenarios ===
+  # Incidence Submodel - Different Scenarios ===
   X_inc <- model.matrix(~ X1, data = X)[, -1]
   
   b_true <- switch(scenario,
@@ -64,7 +63,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure
   pi_cure <- 1 / (1 + exp(-eta_inc))            # Probability of being cured
   cure <- rbinom(n, 1, pi_cure)                 # 1 = cured, 0 = susceptible
   
-  # === 4. Latency Submodel ===
+  # Latency Submodel ===
   X_lat <- cbind(X$X2, X$X3, X$X4)
   
   g_true <- c(-5.65, 0.75, 0.3)
@@ -81,7 +80,6 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure
   Y_time <- rep(Inf, n)
   Y_time[idx] <- exp(log_T[idx])
   
-  # Realistic censoring
   C <- rexp(n, rate = 0.0005)
   time_obs <- pmin(Y_time, C)
   status <- as.numeric(Y_time <= C)
@@ -97,7 +95,7 @@ generate_logn_cure_data <- function(n = 1000, seed = 2000, scenario = "high_cure
     cure = cure
   )
 }
-# ====================== CORRECTED MONTE CARLO SIMULATION ======================
+# ====================== MONTE CARLO SIMULATION ======================
 
 monte_carlo_cure <- function(B = 1000, n = 1000, scenario = "high_cure", seed = 2000) {
   
@@ -266,8 +264,8 @@ monte_carlo_cure <- function(B = 1000, n = 1000, scenario = "high_cure", seed = 
   ))
 }
 
-# ====================== RUN CORRECTED SIMULATION ======================
-cat("\nRunning Monte Carlo Simulation for High Cure Scenario...\n")
+# ====================== RUN SIMULATION ======================
+cat("\n Running Monte Carlo Simulation for High Cure Scenario...\n")
 set.seed(2000)
 mc_results_high <- monte_carlo_cure(B = 1000, n = 1000, scenario = "high_cure", seed = 2000)
 print(mc_results_high$avg_rates)
