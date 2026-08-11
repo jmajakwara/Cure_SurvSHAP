@@ -57,23 +57,10 @@ loans$Occupation <- as.factor(loans$Occupation)
 loans$Term <- as.factor(loans$Term)
 #loans$CreditScoreRange <- relevel(loans$CreditScoreRange, ref = "Fair")
 
-# convert days to months
-#loans <- loans %>% mutate(month = round(time/30.4375, digit=0))
-
-
 # Removing cases whose debt to income ratio is more than 100
 loans <- loans %>% filter(DebtToIncomeRatio < 1 | is.na(DebtToIncomeRatio))
 
 loans <- loans %>% dplyr::select(-2,-Occupation,-ProsperScore)
-
-
-
-
-# Removing cases whose debt to income ratio is more than 100
-
-
-# loans <- loans %>% mutate_if(is.character, as.factor)
-# loans %>%  summarize_all(funs(sum(is.na(.))))/dim(loans)[1]*100
 
 loans_cc <- loans %>% na.omit()
 
@@ -105,8 +92,6 @@ loans <- loans %>% select(-LenderYield,-LoanKey, -LoanCurrentDaysDelinquent,
                       -LP_CustomerPayments,-LP_CustomerPrincipalPayments,-LP_InterestandFees,-LP_ServiceFees,-LP_CollectionFees,-LP_GrossPrincipalLoss,
                       -LP_NetPrincipalLoss,-LP_NonPrincipalRecoverypayments,-Recommendations,-InvestmentFromFriendsCount,-InvestmentFromFriendsAmount,
                       -Investors,-IncomeVerifiable,-BorrowerState, -PercentFunded,-ListingCategory,-EstimatedEffectiveYield,-EstimatedLoss,-EstimatedReturn,-EmploymentStatusDuration, -EmploymentStatus) 
-
-
 
 
 
