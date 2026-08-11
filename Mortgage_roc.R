@@ -32,8 +32,6 @@ mortgage_data  <- read.csv("mortgage.csv")
 mortgage <- mortgage_data %>%
   dplyr::group_by(id) %>%
   dplyr::summarise(
-    # Extract static (time-invariant) covariates at origination
-    # Using first() assumes these are constant for each ID
     FICO = first(FICO_orig_time),
     LTV = first(LTV_orig_time),
     HPI = first(hpi_orig_time),
@@ -56,7 +54,7 @@ mortgage <- mortgage_data %>%
     time_to_event = last_observed - first_observed,
     status = case_when(
       event_default == 1 ~ 1,
-      TRUE ~ 0  # Censored (includes loans that paid off or are still active at study end)
+      TRUE ~ 0  
     )
   ) %>%
   # Select the final columns for modeling
@@ -64,9 +62,8 @@ mortgage <- mortgage_data %>%
                 FICO, LTV, GDP, UER, HPI, Interest_rate, balance, 
                 investor, REtype_SF, REtype_CO, REtype_PU)
 
-mortgage <- mortgage %>%
+mortgage <- mortgage |> dplyr::filter(time_to_event > 0) |>
   dplyr::mutate(
-    time_to_event = ifelse(time_to_event == 0, 0.5, time_to_event),
     Credit_score = dplyr::case_when(
       FICO >= 400 & FICO <= 659 ~ "Fair",
       FICO >= 660 & FICO <= 739 ~ "Good",
@@ -96,20 +93,16 @@ head(mortgage,n=10)
 # PROPER DATA SPLITTING FIRST
 # ===============================
 
-# Split data BEFORE any modeling or feature selection
 set.seed(2000)
 mortgage <- mortgage |>
   dplyr::mutate(event_time = Surv(time_to_event, status))
 
-data_split <- initial_split(mortgage, prop = 0.7, strata = status)  # Changed to 70/30 for better evaluation
+data_split <- initial_split(mortgage, prop = 0.7, strata = status)  
 mortgage_train <- training(data_split)
 mortgage_test  <- testing(data_split)
 
-
-
 time_points <- sort(unique(mortgage_test$time_to_event))
 #time_points <- time_points[1:(length(time_points) - 2)]
-
 
 exp_spec <- 
   survival_reg(dist = "exp") |>
@@ -199,8 +192,8 @@ ggplot(roc_data_long, aes(x = Time, y = ROC_AUC, color = Model)) +
        y = "ROC AUC") +
   theme_minimal() +
   theme(legend.position = "right",
-        axis.text = element_text(size = 12),  # Increase the font size for axis text
-        axis.title = element_text(size = 14)) # Adjust axis title size if necessary
+        axis.text = element_text(size = 12),  
+        axis.title = element_text(size = 14)) 
 
 dev.off()
 
