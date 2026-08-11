@@ -203,7 +203,7 @@ ggplot(brier_data_long, aes(x = Time, y = Brier_Score, color = Model)) +
        y = "Brier score") +
   theme_minimal() +
   theme(legend.position = "right",
-        axis.text = element_text(size = 12),  # Increase the font size for axis text
-        axis.title = element_text(size = 14)) # Adjust axis title size if necessary
+        axis.text = element_text(size = 12),  
+        axis.title = element_text(size = 14)) 
 dev.off()
 
