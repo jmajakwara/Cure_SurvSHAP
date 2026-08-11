@@ -35,7 +35,6 @@ mortgage <- mortgage_data %>%
   dplyr::group_by(id) %>%
   dplyr::summarise(
     # Extract static (time-invariant) covariates at origination
-    # Using first() assumes these are constant for each ID
     FICO = first(FICO_orig_time),
     LTV = first(LTV_orig_time),
     HPI = first(hpi_orig_time),
@@ -60,17 +59,16 @@ mortgage <- mortgage_data %>%
       event_default == 1 ~ 1,
       TRUE ~ 0  # Censored (includes loans that paid off or are still active at study end)
     )
-  ) %>%
+  ) |>
   # Select the final columns for modeling
   dplyr::select(id, time_to_event, status, 
                 FICO, LTV, GDP, UER, HPI, Interest_rate, balance, 
                 investor, REtype_SF, REtype_CO, REtype_PU)
 
-mortgage <- mortgage |> dplyr::filter(time_to_event>0) |>
+mortgage <- mortgage |> dplyr::filter(time_to_event > 0) |>
   dplyr::mutate(
     FICO_score = dplyr::case_when(
-      FICO >= 400 & FICO <=579 ~ "Poor",
-      FICO >= 580 & FICO <= 659 ~ "Fair",
+      FICO >= 400 & FICO <= 659 ~ "Fair",
       FICO >= 660 & FICO <= 739 ~ "Good",
       FICO >= 740 & FICO <= 799 ~ "Very good",
       FICO >= 800 & FICO <= 899 ~ "Excellent",
@@ -78,8 +76,7 @@ mortgage <- mortgage |> dplyr::filter(time_to_event>0) |>
     )
   )
 
-mortgage <- mortgage |>
-dplyr::mutate(
+mortgage <- mortgage |> dplyr::mutate(
     dplyr::across(c(FICO,LTV,UER,HPI,GDP, Interest_rate, balance), as.numeric),
     dplyr::across(c(FICO_score, REtype_SF, REtype_CO, REtype_PU, investor), as.factor)
   )
@@ -90,7 +87,7 @@ cat("Number of loans:", nrow(mortgage), "\n")
 cat("Default rate:", mean(mortgage$status), "\n")
 cat("Censoring rate:", 1 - mean(mortgage$status), "\n")
 
-head(mortgage,n=10)
+head(mortgage, n=10)
 str(mortgage)
 
 # Checking correlation of variables
@@ -115,9 +112,8 @@ hist(mortgage$UER)
 # DATA SPLITTING FIRST
 # ===============================
 
-# Split data BEFORE any modeling or feature selection
 set.seed(2000)
-data_split <- initial_split(mortgage, prop = 0.7, strata = status)  # Changed to 70/30 for better evaluation
+data_split <- initial_split(mortgage, prop = 0.7, strata = status)  
 mortgage_train <- training(data_split)
 mortgage_test  <- testing(data_split)
 
@@ -141,7 +137,7 @@ ggsave("mort_km_plot.pdf", plot = p, width = 10, height = 8, dpi = 300)
 
 
 
-# calculate VIF for each predictor variable; VIF greater than 5 indicates significant multicollinearity.
+# VIF greater than 5 indicates significant multicollinearity.
 cat("calculate VIF for each predictor variable, might need to consider those VIF > 2.5.......\n")
 cox_model <- coxph(Surv(time_to_event, status) ~ FICO + LTV + GDP + UER + HPI, data = mortgage, y=TRUE, x = TRUE)
 vif(cox_model)
@@ -208,9 +204,6 @@ print(glance(log_fit))
 
 
 
-
-
-
 cure_par <- log_fit$res["theta", "est"]
 cat("Cure fraction estimate:", exp(cure_par)/(1+exp(cure_par)), "\n")
 
@@ -240,21 +233,20 @@ predict_survival <- function(object, newdata, times = NULL) {
   s$.id <- rep(seq_len(n), each = nt)
   
   # Reshape to wide format
-  mat <- s %>%
-    dplyr::select(.id, time, est) %>%
-    tidyr::pivot_wider(names_from = time, values_from = est) %>%
+  mat <- s |>
+    dplyr::select(.id, time, est) |>
+    tidyr::pivot_wider(names_from = time, values_from = est) |>
     dplyr::arrange(.id)
   
   # Convert to matrix and remove id column
   result_matrix <- as.matrix(mat[, -1])
   colnames(result_matrix) <- NULL
-  
   return(result_matrix)
 }
 
 # --------------------- RISK PREDICTION FUNCTION ---------------------
 predict_risk <- function(object, newdata) {
-  # Use median event time from training data as horizon
+  # Using median event time from training data as horizon
   horizon <- median(sim_train$time[sim_train$status == 1])
   surv_mat <- predict_survival(object, newdata, times = horizon)
   risk_score <- 1 - as.vector(surv_mat)
@@ -275,7 +267,6 @@ explainer <- survex::explain_survival(
 
 # --------------------- SURVSHAP(t) ANALYSIS ---------------------
 # Calculate SurvSHAP(t) values using model_parts() or model_survshap()
-
 # For global feature importance with SurvSHAP(t)
 shap_result <- predict_parts(
   explainer,
@@ -284,7 +275,7 @@ shap_result <- predict_parts(
   N = 100,
   output_type = "survival",
   calculation_method = "kernelshap",
-  aggregation_method = "integral" #"mean_absolute"  #
+  aggregation_method = "integral" 
 )
 
 plot(shap_result, geom = "importance",max_vars = 8) + 
@@ -292,6 +283,6 @@ plot(shap_result, geom = "importance",max_vars = 8) +
   theme_minimal()
 
 plot(shap_result, geom = "beeswarm",max_vars = 8) + 
-#  ggtitle("SurvSHAP(t) - Lognormal Mixture Cure Model") +
+  ggtitle("SurvSHAP(t) - Lognormal Mixture Cure Model") +
   theme_minimal()
 
