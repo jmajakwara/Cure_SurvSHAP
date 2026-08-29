@@ -65,8 +65,9 @@ mortgage <- mortgage_data %>%
                 FICO, LTV, GDP, UER, HPI, Interest_rate, balance, 
                 investor, REtype_SF, REtype_CO, REtype_PU)
 
-mortgage <- mortgage |> dplyr::filter(time_to_event > 0) |>
+mortgage <- mortgage |> 
   dplyr::mutate(
+	  time_to_event = ifelse(time_to_event == 0, 0.01, time_to_event),
     FICO_score = dplyr::case_when(
       FICO >= 400 & FICO <= 659 ~ "Fair",
       FICO >= 660 & FICO <= 739 ~ "Good",
